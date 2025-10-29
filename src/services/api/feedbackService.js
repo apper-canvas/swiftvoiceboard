@@ -67,15 +67,6 @@ case "oldest":
     
     return filteredPosts;
   },
-  async getVotedPosts() {
-    await delay(200);
-    
-    // Get voted post IDs from localStorage
-    const votedPostIds = JSON.parse(localStorage.getItem("votedPosts") || "[]");
-    
-    // Return posts that user has voted for
-    return posts.filter(post => votedPostIds.includes(post.Id));
-  }
 async getVotedPosts() {
     await delay(200);
     
