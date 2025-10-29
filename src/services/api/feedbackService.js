@@ -1,11 +1,13 @@
 import feedbackData from "@/services/mockData/feedbackPosts.json";
+import React from "react";
+import Error from "@/components/ui/Error";
 
 let posts = [...feedbackData];
 
 const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 export const feedbackService = {
-  async getAll(filters = {}) {
+async getAll(filters = {}) {
     await delay(300);
     
     let filteredPosts = [...posts];
@@ -50,7 +52,7 @@ export const feedbackService = {
         case "newest":
           filteredPosts.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
           break;
-        case "oldest":
+case "oldest":
           filteredPosts.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
           break;
         default:
@@ -64,6 +66,24 @@ export const feedbackService = {
     }
     
     return filteredPosts;
+  },
+  async getVotedPosts() {
+    await delay(200);
+    
+    // Get voted post IDs from localStorage
+    const votedPostIds = JSON.parse(localStorage.getItem("votedPosts") || "[]");
+    
+    // Return posts that user has voted for
+    return posts.filter(post => votedPostIds.includes(post.Id));
+  }
+async getVotedPosts() {
+    await delay(200);
+    
+    // Get voted post IDs from localStorage
+    const votedPostIds = JSON.parse(localStorage.getItem("votedPosts") || "[]");
+    
+    // Return posts that user has voted for
+    return posts.filter(post => votedPostIds.includes(post.Id));
   },
 
   async getById(id) {

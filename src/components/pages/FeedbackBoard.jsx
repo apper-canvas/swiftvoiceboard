@@ -1,25 +1,28 @@
-import { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import ApperIcon from "@/components/ApperIcon";
-import Button from "@/components/atoms/Button";
-import FeedbackCard from "@/components/molecules/FeedbackCard";
-import SearchBar from "@/components/molecules/SearchBar";
-import SortDropdown from "@/components/molecules/SortDropdown";
-import FilterSidebar from "@/components/molecules/FilterSidebar";
-import PostDetailModal from "@/components/organisms/PostDetailModal";
-import Loading from "@/components/ui/Loading";
-import Error from "@/components/ui/Error";
-import Empty from "@/components/ui/Empty";
+import VotedPostsSidebar from "@/components/organisms/VotedPostsSidebar";
 import { feedbackService } from "@/services/api/feedbackService";
 import { toast } from "react-toastify";
+import ApperIcon from "@/components/ApperIcon";
+import Button from "@/components/atoms/Button";
+import PostDetailModal from "@/components/organisms/PostDetailModal";
+import Loading from "@/components/ui/Loading";
+import Empty from "@/components/ui/Empty";
+import Error from "@/components/ui/Error";
+import FeedbackCard from "@/components/molecules/FeedbackCard";
+import SortDropdown from "@/components/molecules/SortDropdown";
+import SearchBar from "@/components/molecules/SearchBar";
+import FilterSidebar from "@/components/molecules/FilterSidebar";
 
 const FeedbackBoard = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [selectedPostId, setSelectedPostId] = useState(null);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isVotedSidebarOpen, setIsVotedSidebarOpen] = useState(false);
   const [votingPosts, setVotingPosts] = useState(new Set());
+  const [votedPosts, setVotedPosts] = useState([]);
   
   const [filters, setFilters] = useState({
     search: "",
@@ -28,8 +31,9 @@ const FeedbackBoard = () => {
     sortBy: "trending"
   });
 
-  useEffect(() => {
+useEffect(() => {
     loadPosts();
+    loadVotedPosts();
   }, [filters]);
 
   const loadPosts = async () => {
@@ -85,7 +89,7 @@ const FeedbackBoard = () => {
     }
   };
 
-  const handleSearchChange = (value) => {
+const handleSearchChange = (value) => {
     setFilters(prev => ({ ...prev, search: value }));
   };
 
@@ -93,11 +97,20 @@ const FeedbackBoard = () => {
     setFilters(prev => ({ ...prev, sortBy }));
   };
 
-  const isPostVoted = (postId) => {
-    const votedPosts = JSON.parse(localStorage.getItem("votedPosts") || "[]");
-    return votedPosts.includes(postId);
+  const handlePostClick = (postId) => {
+    setSelectedPostId(postId);
+    setIsVotedSidebarOpen(false);
   };
 
+  const isPostVoted = (postId) => {
+    const votedPostIds = JSON.parse(localStorage.getItem("votedPosts") || "[]");
+    return votedPostIds.includes(postId);
+  };
+
+  const loadVotedPosts = async () => {
+    const voted = await feedbackService.getVotedPosts();
+    setVotedPosts(voted);
+  };
   const hasActiveFilters = filters.categories.length > 0 || filters.statuses.length > 0 || filters.search;
 
   return (
@@ -132,7 +145,7 @@ const FeedbackBoard = () => {
           </div>
 
           {/* Main Content */}
-          <div className="flex-1 min-w-0">
+<div className="flex-1 min-w-0">
             {/* Controls */}
             <div className="flex flex-col sm:flex-row gap-4 mb-8">
               <div className="flex items-center space-x-4">
@@ -145,6 +158,18 @@ const FeedbackBoard = () => {
                   Filters
                   {hasActiveFilters && (
                     <span className="ml-2 w-2 h-2 bg-primary rounded-full"></span>
+                  )}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => setIsVotedSidebarOpen(true)}
+                >
+                  <ApperIcon name="Heart" className="h-4 w-4 mr-2" />
+                  My Votes
+                  {votedPosts.length > 0 && (
+                    <span className="ml-2 px-2 py-0.5 bg-primary text-white text-xs rounded-full">
+                      {votedPosts.length}
+                    </span>
                   )}
                 </Button>
               </div>
@@ -216,8 +241,18 @@ const FeedbackBoard = () => {
                   />
                 ))}
               </motion.div>
-            )}
+)}
           </div>
+
+          {/* Voted Posts Sidebar */}
+          <VotedPostsSidebar
+            isOpen={isVotedSidebarOpen}
+            onClose={() => setIsVotedSidebarOpen(false)}
+            votedPosts={votedPosts}
+            onPostClick={handlePostClick}
+            onVote={handleVote}
+            isPostVoted={isPostVoted}
+          />
         </div>
       </div>
 

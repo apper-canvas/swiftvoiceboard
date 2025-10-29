@@ -69,14 +69,14 @@ const FilterSidebar = ({
       </AnimatePresence>
 
       {/* Sidebar */}
-      <motion.div
+<motion.div
         initial={{ x: -300, opacity: 0 }}
         animate={{ 
           x: isOpen ? 0 : -300, 
           opacity: isOpen ? 1 : 0 
         }}
         transition={{ duration: 0.3, ease: "easeInOut" }}
-        className="fixed left-0 top-20 bottom-0 w-80 bg-white/95 backdrop-blur-lg shadow-xl border-r border-gray-100 z-50 lg:relative lg:top-0 lg:translate-x-0 lg:opacity-100 lg:shadow-none lg:w-64"
+        className="fixed left-0 top-20 bottom-0 w-80 bg-white/95 backdrop-blur-lg shadow-xl border-r border-gray-100 z-40 lg:relative lg:top-0 lg:translate-x-0 lg:opacity-100 lg:shadow-none lg:w-64"
       >
         <div className="p-6 h-full overflow-y-auto">
           {/* Header */}
