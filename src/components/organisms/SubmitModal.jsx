@@ -4,12 +4,12 @@ import { toast } from "react-toastify";
 import ApperIcon from "@/components/ApperIcon";
 import Button from "@/components/atoms/Button";
 import Input from "@/components/atoms/Input";
-import Textarea from "@/components/atoms/Textarea";
+import RichTextEditor from "@/components/atoms/RichTextEditor";
 import Select from "@/components/atoms/Select";
 import { feedbackService } from "@/services/api/feedbackService";
 
 const SubmitModal = ({ isOpen, onClose }) => {
-  const [formData, setFormData] = useState({
+const [formData, setFormData] = useState({
     title: "",
     description: "",
     category: "",
@@ -38,7 +38,11 @@ const SubmitModal = ({ isOpen, onClose }) => {
       newErrors.title = "Title is required";
     }
     
-    if (!formData.description.trim()) {
+// Check if description has actual text content (strip HTML tags)
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = formData.description;
+    const textContent = tempDiv.textContent || tempDiv.innerText || '';
+    if (!textContent.trim()) {
       newErrors.description = "Description is required";
     }
     
@@ -71,7 +75,7 @@ const SubmitModal = ({ isOpen, onClose }) => {
       
       // Reset form
       setFormData({
-        title: "",
+title: "",
         description: "",
         category: "",
         isAnonymous: false,
@@ -90,7 +94,7 @@ const SubmitModal = ({ isOpen, onClose }) => {
     }
   };
 
-  const handleInputChange = (field, value) => {
+const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
     if (errors[field]) {
@@ -158,15 +162,14 @@ const SubmitModal = ({ isOpen, onClose }) => {
                 </div>
 
                 {/* Description */}
-                <div className="space-y-2">
+<div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-900">
                     Description *
                   </label>
-                  <Textarea
-                    rows={5}
-                    placeholder="Describe your request in detail. What problem does it solve? How would it work?"
+                  <RichTextEditor
                     value={formData.description}
-                    onChange={(e) => handleInputChange("description", e.target.value)}
+                    onChange={(value) => handleInputChange("description", value)}
+                    placeholder="Describe your request in detail. What problem does it solve? How would it work? Use the toolbar to format your text."
                     error={errors.description}
                   />
                   {errors.description && (
