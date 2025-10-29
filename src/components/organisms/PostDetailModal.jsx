@@ -168,241 +168,245 @@ const handleReply = async (parentId, content, images = []) => {
     ).join(" ");
   };
 
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-            onClick={onClose}
-          />
-
-          {/* Modal */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative w-full max-w-4xl bg-white/95 backdrop-blur-lg rounded-xl shadow-2xl border border-gray-100 max-h-[90vh] overflow-hidden"
-          >
-            {/* Header */}
-            <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-primary/5 to-purple-600/5 flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-gray-900">Feedback Details</h2>
-                <p className="text-sm text-gray-600">Join the discussion</p>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <ApperIcon name="X" className="h-5 w-5" />
-              </Button>
-            </div>
-
-            {/* Content */}
-            <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
-              {loading && <Loading />}
-              
-              {error && (
-                <div className="p-6">
-                  <Error message={error} onRetry={loadPostDetails} />
-                </div>
-              )}
-
-              {post && (
-                <div className="p-6 space-y-6">
-                  {/* Post Header */}
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h1 className="text-2xl font-bold text-gray-900 mb-3">
-                        {post.title}
-                      </h1>
-                      <div className="flex items-center space-x-4 text-sm text-gray-500 mb-4">
-                        <span>by {post.isAnonymous ? "Anonymous" : post.authorName}</span>
-                        <span>•</span>
-                        <span>{formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}</span>
-                      </div>
-                    </div>
-                    
-                    <VoteButton
-                      count={post.voteCount}
-                      isVoted={isVoted}
-                      isLoading={isVoting}
-                      onClick={handleVote}
-                      size="lg"
-                    />
-                  </div>
-
-                  {/* Status and Category */}
-                  <div className="flex items-center space-x-3">
-                    <Badge variant={getStatusColor(post.status)} size="md">
-                      {formatStatus(post.status)}
-                    </Badge>
-                    <Badge variant="default" size="md">
-                      {post.category}
-                    </Badge>
-                  </div>
-
-                  {/* Description */}
-                  <div className="prose prose-gray max-w-none">
-                    <p className="text-gray-700 leading-relaxed text-base">
-                      {post.description}
-                    </p>
-                  </div>
-
-{/* Post Images */}
-                  {post.images && post.images.length > 0 && (
-                    <div className="space-y-2">
-                      <h3 className="text-sm font-medium text-gray-700">Attachments</h3>
-                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                        {post.images.map((image, index) => (
-                          <motion.div
-                            key={index}
-                            whileHover={{ scale: 1.05 }}
-                            className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 cursor-pointer group"
-                            onClick={() => setSelectedImage(image)}
-                          >
-                            <img
-                              src={image}
-                              alt={`Attachment ${index + 1}`}
-                              className="w-full h-full object-cover"
-                            />
-                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
-                              <ApperIcon name="ZoomIn" className="h-6 w-6 text-white" />
-                            </div>
-                          </motion.div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Comment Form */}
-                  <div className="border-t pt-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      Add Comment ({comments.length})
-                    </h3>
-                    
-<form onSubmit={handleSubmitComment} className="space-y-4">
-                      <div className="space-y-3">
-                        <Input
-                          placeholder="Write your comment..."
-                          value={newComment}
-                          onChange={(e) => setNewComment(e.target.value)}
-                          className="min-h-[80px] resize-none"
-                        />
-                        
-                        <ImageUpload
-                          images={commentImages}
-                          onChange={setCommentImages}
-                          maxImages={3}
-                          maxSizeMB={5}
-                        />
-                        
-                        <div className="flex items-center space-x-4">
-                          <div className="flex items-center space-x-2">
-                            <input
-                              type="checkbox"
-                              id="commentAnonymous"
-                              checked={isAnonymous}
-                              onChange={(e) => setIsAnonymous(e.target.checked)}
-                              className="rounded border-gray-300 text-primary focus:ring-primary/50"
-                            />
-                            <label htmlFor="commentAnonymous" className="text-sm text-gray-700">
-                              Post anonymously
-                            </label>
-                          </div>
-                          
-                          {!isAnonymous && (
-                            <Input
-                              placeholder="Your name..."
-                              value={authorName}
-                              onChange={(e) => setAuthorName(e.target.value)}
-                              className="max-w-xs"
-                            />
-                          )}
-                        </div>
-                      </div>
-                      
-                      <Button
-                        type="submit"
-                        disabled={!newComment.trim() || isSubmittingComment}
-                        className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90"
-                      >
-                        {isSubmittingComment ? (
-                          <>
-                            <ApperIcon name="Loader2" className="h-4 w-4 mr-2 animate-spin" />
-                            Posting...
-                          </>
-                        ) : (
-                          <>
-                            <ApperIcon name="MessageCircle" className="h-4 w-4 mr-2" />
-                            Post Comment
-                          </>
-                        )}
-                      </Button>
-                    </form>
-                  </div>
-
-                  {/* Comments */}
-                  {comments.length > 0 && (
-                    <div className="border-t pt-6">
-                      <div className="space-y-0 divide-y divide-gray-100">
-{comments.map((comment) => (
-                          <CommentItem
-                            key={comment.Id}
-                            comment={comment}
-                            onReply={handleReply}
-                            isSubmittingReply={false}
-                            onImageClick={setSelectedImage}
-                          />
-                        ))}
-                      </div>
-</div>
-                  )}
-                </div>
-              )}
-            </div>
-          </motion.div>
-        </div>
-      )}
-    </AnimatePresence>
-        {/* Image Lightbox */}
-        <AnimatePresence>
-          {selectedImage && (
+return (
+    <>
+      <AnimatePresence>
+        {isOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            {/* Backdrop */}
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/90 z-[70] flex items-center justify-center p-4"
-              onClick={() => setSelectedImage(null)}
+              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+              onClick={onClose}
+            />
+
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-4xl bg-white/95 backdrop-blur-lg rounded-xl shadow-2xl border border-gray-100 max-h-[90vh] overflow-hidden"
             >
-              <motion.div
-                initial={{ scale: 0.8 }}
-                animate={{ scale: 1 }}
-                exit={{ scale: 0.8 }}
-                className="relative max-w-4xl max-h-[90vh]"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <button
-                  onClick={() => setSelectedImage(null)}
-                  className="absolute -top-12 right-0 p-2 text-white hover:text-gray-300 transition-colors"
+              {/* Header */}
+              <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-primary/5 to-purple-600/5 flex items-center justify-between">
+                <div>
+                  <h2 className="text-lg font-bold text-gray-900">Feedback Details</h2>
+                  <p className="text-sm text-gray-600">Join the discussion</p>
+                </div>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={onClose}
+                  className="text-gray-400 hover:text-gray-600"
                 >
-                  <ApperIcon name="X" className="h-6 w-6" />
-                </button>
-                <img
-                  src={selectedImage}
-                  alt="Full size"
-                  className="max-w-full max-h-[90vh] rounded-lg"
-                />
-              </motion.div>
+                  <ApperIcon name="X" className="h-5 w-5" />
+                </Button>
+              </div>
+
+              {/* Content */}
+              <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
+                {loading && <Loading />}
+                
+                {error && (
+                  <div className="p-6">
+                    <Error message={error} onRetry={loadPostDetails} />
+                  </div>
+                )}
+
+                {post && (
+                  <div className="p-6 space-y-6">
+                    {/* Post Header */}
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h1 className="text-2xl font-bold text-gray-900 mb-3">
+                          {post.title}
+                        </h1>
+                        <div className="flex items-center space-x-4 text-sm text-gray-500 mb-4">
+                          <span>by {post.isAnonymous ? "Anonymous" : post.authorName}</span>
+                          <span>•</span>
+                          <span>{formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}</span>
+                        </div>
+                      </div>
+                      
+                      <VoteButton
+                        count={post.voteCount}
+                        isVoted={isVoted}
+                        isLoading={isVoting}
+                        onClick={handleVote}
+                        size="lg"
+                      />
+                    </div>
+
+                    {/* Status and Category */}
+                    <div className="flex items-center space-x-3">
+                      <Badge variant={getStatusColor(post.status)} size="md">
+                        {formatStatus(post.status)}
+                      </Badge>
+                      <Badge variant="default" size="md">
+                        {post.category}
+                      </Badge>
+                    </div>
+
+                    {/* Description */}
+                    <div className="prose prose-gray max-w-none">
+                      <p className="text-gray-700 leading-relaxed text-base">
+                        {post.description}
+                      </p>
+                    </div>
+
+                    {/* Post Images */}
+                    {post.images && post.images.length > 0 && (
+                      <div className="space-y-2">
+                        <h3 className="text-sm font-medium text-gray-700">Attachments</h3>
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                          {post.images.map((image, index) => (
+                            <motion.div
+                              key={index}
+                              whileHover={{ scale: 1.05 }}
+                              className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 cursor-pointer group"
+                              onClick={() => setSelectedImage(image)}
+                            >
+                              <img
+                                src={image}
+                                alt={`Attachment ${index + 1}`}
+                                className="w-full h-full object-cover"
+                              />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <ApperIcon name="ZoomIn" className="h-6 w-6 text-white" />
+                              </div>
+                            </motion.div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Comment Form */}
+                    <div className="border-t pt-6">
+                      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                        Add Comment ({comments.length})
+                      </h3>
+                      
+                      <form onSubmit={handleSubmitComment} className="space-y-4">
+                        <div className="space-y-3">
+                          <Input
+                            placeholder="Write your comment..."
+                            value={newComment}
+                            onChange={(e) => setNewComment(e.target.value)}
+                            className="min-h-[80px] resize-none"
+                          />
+                          
+                          <ImageUpload
+                            images={commentImages}
+                            onChange={setCommentImages}
+                            maxImages={3}
+                            maxSizeMB={5}
+                          />
+                          
+                          <div className="flex items-center space-x-4">
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id="commentAnonymous"
+                                checked={isAnonymous}
+                                onChange={(e) => setIsAnonymous(e.target.checked)}
+                                className="rounded border-gray-300 text-primary focus:ring-primary/50"
+                              />
+                              <label htmlFor="commentAnonymous" className="text-sm text-gray-700">
+                                Post anonymously
+                              </label>
+                            </div>
+                            
+                            {!isAnonymous && (
+                              <Input
+                                placeholder="Your name..."
+                                value={authorName}
+                                onChange={(e) => setAuthorName(e.target.value)}
+                                className="max-w-xs"
+                              />
+                            )}
+                          </div>
+                        </div>
+                        
+                        <Button
+                          type="submit"
+                          disabled={!newComment.trim() || isSubmittingComment}
+                          className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90"
+                        >
+                          {isSubmittingComment ? (
+                            <>
+                              <ApperIcon name="Loader2" className="h-4 w-4 mr-2 animate-spin" />
+                              Posting...
+                            </>
+                          ) : (
+                            <>
+                              <ApperIcon name="MessageCircle" className="h-4 w-4 mr-2" />
+                              Post Comment
+                            </>
+                          )}
+                        </Button>
+                      </form>
+                    </div>
+
+                    {/* Comments */}
+                    {comments.length > 0 && (
+                      <div className="border-t pt-6">
+                        <div className="space-y-0 divide-y divide-gray-100">
+                          {comments.map((comment) => (
+                            <CommentItem
+                              key={comment.Id}
+                              comment={comment}
+                              onReply={handleReply}
+                              isSubmittingReply={false}
+                              onImageClick={setSelectedImage}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </motion.div>
-          )}
-        </AnimatePresence>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Image Lightbox */}
+      <AnimatePresence>
+        {selectedImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/90 z-[70] flex items-center justify-center p-4"
+            onClick={() => setSelectedImage(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.8 }}
+              className="relative max-w-4xl max-h-[90vh]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                onClick={() => setSelectedImage(null)}
+                className="absolute -top-12 right-0 p-2 text-white hover:text-gray-300 transition-colors"
+              >
+                <ApperIcon name="X" className="h-6 w-6" />
+              </button>
+              <img
+                src={selectedImage}
+                alt="Full size"
+                className="max-w-full max-h-[90vh] rounded-lg"
+              />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
 };
 
 export default PostDetailModal;
