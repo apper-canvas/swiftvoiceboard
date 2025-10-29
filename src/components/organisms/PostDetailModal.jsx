@@ -1,0 +1,338 @@
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { formatDistanceToNow } from "date-fns";
+import { toast } from "react-toastify";
+import ApperIcon from "@/components/ApperIcon";
+import Button from "@/components/atoms/Button";
+import Badge from "@/components/atoms/Badge";
+import Input from "@/components/atoms/Input";
+import VoteButton from "@/components/molecules/VoteButton";
+import CommentItem from "@/components/molecules/CommentItem";
+import Loading from "@/components/ui/Loading";
+import Error from "@/components/ui/Error";
+import { feedbackService } from "@/services/api/feedbackService";
+import { commentService } from "@/services/api/commentService";
+
+const PostDetailModal = ({ postId, isOpen, onClose }) => {
+  const [post, setPost] = useState(null);
+  const [comments, setComments] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [isVoted, setIsVoted] = useState(false);
+  const [isVoting, setIsVoting] = useState(false);
+  const [newComment, setNewComment] = useState("");
+  const [authorName, setAuthorName] = useState("");
+  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && postId) {
+      loadPostDetails();
+    }
+  }, [isOpen, postId]);
+
+  const loadPostDetails = async () => {
+    setLoading(true);
+    setError("");
+    
+    try {
+      const [postData, commentsData] = await Promise.all([
+        feedbackService.getById(postId),
+        commentService.getByPostId(postId)
+      ]);
+      
+      setPost(postData);
+      setComments(commentsData);
+      
+      // Check if user has voted (simulate with localStorage)
+      const votedPosts = JSON.parse(localStorage.getItem("votedPosts") || "[]");
+      setIsVoted(votedPosts.includes(postId));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleVote = async () => {
+    if (isVoting) return;
+    
+    setIsVoting(true);
+    
+    try {
+      const increment = !isVoted;
+      const updatedPost = await feedbackService.vote(postId, increment);
+      
+      setPost(updatedPost);
+      setIsVoted(!isVoted);
+      
+      // Update localStorage
+      const votedPosts = JSON.parse(localStorage.getItem("votedPosts") || "[]");
+      if (increment) {
+        votedPosts.push(postId);
+      } else {
+        const index = votedPosts.indexOf(postId);
+        if (index > -1) votedPosts.splice(index, 1);
+      }
+      localStorage.setItem("votedPosts", JSON.stringify(votedPosts));
+      
+      toast.success(increment ? "Vote added!" : "Vote removed!");
+    } catch (err) {
+      toast.error("Failed to vote. Please try again.");
+    } finally {
+      setIsVoting(false);
+    }
+  };
+
+  const handleSubmitComment = async (e) => {
+    e.preventDefault();
+    
+    if (!newComment.trim()) return;
+    if (!isAnonymous && !authorName.trim()) {
+      toast.error("Please enter your name or select anonymous");
+      return;
+    }
+    
+    setIsSubmittingComment(true);
+    
+    try {
+      await commentService.create({
+        postId: String(postId),
+        parentId: null,
+        authorName: isAnonymous ? "Anonymous" : authorName.trim(),
+        content: newComment.trim(),
+        isAnonymous
+      });
+      
+      // Update comment count in post
+      const updatedPost = await feedbackService.update(postId, {
+        commentCount: post.commentCount + 1
+      });
+      setPost(updatedPost);
+      
+      // Reload comments
+      const updatedComments = await commentService.getByPostId(postId);
+      setComments(updatedComments);
+      
+      setNewComment("");
+      if (!isAnonymous) setAuthorName("");
+      
+      toast.success("Comment added successfully!");
+    } catch (err) {
+      toast.error("Failed to add comment. Please try again.");
+    } finally {
+      setIsSubmittingComment(false);
+    }
+  };
+
+  const handleReply = async (parentId, content) => {
+    if (!content.trim()) return;
+    
+    try {
+      await commentService.create({
+        postId: String(postId),
+        parentId: String(parentId),
+        authorName: "Anonymous", // Simplify for replies
+        content: content.trim(),
+        isAnonymous: true
+      });
+      
+      // Reload comments
+      const updatedComments = await commentService.getByPostId(postId);
+      setComments(updatedComments);
+      
+      toast.success("Reply added!");
+    } catch (err) {
+      toast.error("Failed to add reply. Please try again.");
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case "under-review": return "warning";
+      case "planned": return "info";
+      case "in-progress": return "primary";
+      case "completed": return "success";
+      default: return "default";
+    }
+  };
+
+  const formatStatus = (status) => {
+    return status.split("-").map(word => 
+      word.charAt(0).toUpperCase() + word.slice(1)
+    ).join(" ");
+  };
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+            onClick={onClose}
+          />
+
+          {/* Modal */}
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className="relative w-full max-w-4xl bg-white/95 backdrop-blur-lg rounded-xl shadow-2xl border border-gray-100 max-h-[90vh] overflow-hidden"
+          >
+            {/* Header */}
+            <div className="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-primary/5 to-purple-600/5 flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">Feedback Details</h2>
+                <p className="text-sm text-gray-600">Join the discussion</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <ApperIcon name="X" className="h-5 w-5" />
+              </Button>
+            </div>
+
+            {/* Content */}
+            <div className="overflow-y-auto max-h-[calc(90vh-80px)]">
+              {loading && <Loading />}
+              
+              {error && (
+                <div className="p-6">
+                  <Error message={error} onRetry={loadPostDetails} />
+                </div>
+              )}
+
+              {post && (
+                <div className="p-6 space-y-6">
+                  {/* Post Header */}
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <h1 className="text-2xl font-bold text-gray-900 mb-3">
+                        {post.title}
+                      </h1>
+                      <div className="flex items-center space-x-4 text-sm text-gray-500 mb-4">
+                        <span>by {post.isAnonymous ? "Anonymous" : post.authorName}</span>
+                        <span>•</span>
+                        <span>{formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}</span>
+                      </div>
+                    </div>
+                    
+                    <VoteButton
+                      count={post.voteCount}
+                      isVoted={isVoted}
+                      isLoading={isVoting}
+                      onClick={handleVote}
+                      size="lg"
+                    />
+                  </div>
+
+                  {/* Status and Category */}
+                  <div className="flex items-center space-x-3">
+                    <Badge variant={getStatusColor(post.status)} size="md">
+                      {formatStatus(post.status)}
+                    </Badge>
+                    <Badge variant="default" size="md">
+                      {post.category}
+                    </Badge>
+                  </div>
+
+                  {/* Description */}
+                  <div className="prose prose-gray max-w-none">
+                    <p className="text-gray-700 leading-relaxed text-base">
+                      {post.description}
+                    </p>
+                  </div>
+
+                  {/* Comment Form */}
+                  <div className="border-t pt-6">
+                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
+                      Add Comment ({comments.length})
+                    </h3>
+                    
+                    <form onSubmit={handleSubmitComment} className="space-y-4">
+                      <div className="space-y-3">
+                        <Input
+                          placeholder="Write your comment..."
+                          value={newComment}
+                          onChange={(e) => setNewComment(e.target.value)}
+                          className="min-h-[80px] resize-none"
+                        />
+                        
+                        <div className="flex items-center space-x-4">
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              id="commentAnonymous"
+                              checked={isAnonymous}
+                              onChange={(e) => setIsAnonymous(e.target.checked)}
+                              className="rounded border-gray-300 text-primary focus:ring-primary/50"
+                            />
+                            <label htmlFor="commentAnonymous" className="text-sm text-gray-700">
+                              Post anonymously
+                            </label>
+                          </div>
+                          
+                          {!isAnonymous && (
+                            <Input
+                              placeholder="Your name..."
+                              value={authorName}
+                              onChange={(e) => setAuthorName(e.target.value)}
+                              className="max-w-xs"
+                            />
+                          )}
+                        </div>
+                      </div>
+                      
+                      <Button
+                        type="submit"
+                        disabled={!newComment.trim() || isSubmittingComment}
+                        className="bg-gradient-to-r from-primary to-purple-600 hover:from-primary/90 hover:to-purple-600/90"
+                      >
+                        {isSubmittingComment ? (
+                          <>
+                            <ApperIcon name="Loader2" className="h-4 w-4 mr-2 animate-spin" />
+                            Posting...
+                          </>
+                        ) : (
+                          <>
+                            <ApperIcon name="MessageCircle" className="h-4 w-4 mr-2" />
+                            Post Comment
+                          </>
+                        )}
+                      </Button>
+                    </form>
+                  </div>
+
+                  {/* Comments */}
+                  {comments.length > 0 && (
+                    <div className="border-t pt-6">
+                      <div className="space-y-0 divide-y divide-gray-100">
+                        {comments.map((comment) => (
+                          <CommentItem
+                            key={comment.Id}
+                            comment={comment}
+                            onReply={handleReply}
+                            isSubmittingReply={false}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+};
+
+export default PostDetailModal;
