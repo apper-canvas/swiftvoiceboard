@@ -1,33 +1,34 @@
-import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { AnimatePresence, motion } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "react-toastify";
+import { roadmapService } from "@/services/api/roadmapService";
+import { commentService } from "@/services/api/commentService";
 import ApperIcon from "@/components/ApperIcon";
 import Badge from "@/components/atoms/Badge";
 import Button from "@/components/atoms/Button";
 import Input from "@/components/atoms/Input";
 import Card from "@/components/atoms/Card";
 import ImageUpload from "@/components/atoms/ImageUpload";
+import Roadmap from "@/components/pages/Roadmap";
 import Loading from "@/components/ui/Loading";
 import Error from "@/components/ui/Error";
 import VoteButton from "@/components/molecules/VoteButton";
 import CommentItem from "@/components/molecules/CommentItem";
-import { roadmapService } from "@/services/api/roadmapService";
-import { commentService } from "@/services/api/commentService";
 
 const RoadmapDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [item, setItem] = useState(null);
-  const [comments, setComments] = useState([]);
+const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [commentText, setCommentText] = useState("");
+  const [newComment, setNewComment] = useState('');
+  const [authorName, setAuthorName] = useState('');
   const [commentImages, setCommentImages] = useState([]);
-  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [replyingTo, setReplyingTo] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-
   useEffect(() => {
     loadItemDetails();
     loadComments();
@@ -55,29 +56,25 @@ const RoadmapDetail = () => {
     }
   };
 
-  const handleSubmitComment = async (e) => {
+const handleSubmitComment = async (e) => {
     e.preventDefault();
-    if (!commentText.trim()) {
+    if (!newComment.trim()) {
       toast.error("Please enter a comment");
       return;
     }
 
     setSubmitting(true);
     try {
-      await commentService.create({
-        roadmapItemId: String(id),
-        content: commentText,
-        authorName: isAnonymous ? "Anonymous" : "User",
-        isAnonymous,
-        images: commentImages,
-        parentId: null
+      const comment = await commentService.create({
+        postId: id,
+        authorName: authorName.trim() || "User",
+        content: newComment.trim(),
+        images: commentImages
       });
-
-      setCommentText("");
+setComments([...comments, comment]);
+      setNewComment('');
       setCommentImages([]);
-      setIsAnonymous(false);
-      await loadComments();
-      toast.success("Comment added successfully!");
+      toast.success('Comment added successfully');
     } catch (err) {
       toast.error("Failed to add comment");
     } finally {
@@ -85,17 +82,15 @@ const RoadmapDetail = () => {
     }
   };
 
-  const handleReply = async (parentId, content, images = []) => {
+const handleReply = async (parentId, content, images = []) => {
     try {
-      await commentService.create({
-        roadmapItemId: String(id),
-        content,
-        authorName: "User",
-        isAnonymous: false,
-        images,
-        parentId: String(parentId)
+      const reply = await commentService.create({
+        postId: id,
+        authorName: authorName.trim() || "User",
+        content: content.trim(),
+        images: images,
+        parentId: parentId
       });
-
       await loadComments();
       toast.success("Reply added successfully!");
     } catch (err) {
@@ -218,11 +213,11 @@ if (loading) return <Loading type="post" />;
             </div>
 
             {/* Comment Form */}
-            <form onSubmit={handleSubmitComment} className="mb-6">
+<form onSubmit={handleSubmitComment} className="mb-6">
               <div className="space-y-4">
                 <Input
-                  value={commentText}
-                  onChange={(e) => setCommentText(e.target.value)}
+                  value={newComment}
+                  onChange={(e) => setNewComment(e.target.value)}
                   placeholder="Share your thoughts on this roadmap item..."
                   className="w-full"
                   disabled={submitting}
@@ -233,21 +228,11 @@ if (loading) return <Loading type="post" />;
                   onChange={setCommentImages}
                   maxImages={3}
                 />
-
-                <div className="flex items-center justify-between">
-                  <label className="flex items-center space-x-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={isAnonymous}
-                      onChange={(e) => setIsAnonymous(e.target.checked)}
-                      className="rounded border-gray-300 text-primary focus:ring-primary"
-                    />
-                    <span className="text-sm text-gray-600">Post anonymously</span>
-                  </label>
-
+                
+                <div className="flex justify-end">
                   <Button
                     type="submit"
-                    disabled={!commentText.trim() || submitting}
+                    disabled={!newComment.trim() || submitting}
                     className="px-6"
                   >
                     {submitting ? "Posting..." : "Post Comment"}

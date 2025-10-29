@@ -2,13 +2,13 @@ import React, { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "react-toastify";
-import ImageUpload from "@/components/atoms/ImageUpload";
 import { feedbackService } from "@/services/api/feedbackService";
 import { commentService } from "@/services/api/commentService";
 import ApperIcon from "@/components/ApperIcon";
 import Badge from "@/components/atoms/Badge";
 import Button from "@/components/atoms/Button";
 import Input from "@/components/atoms/Input";
+import ImageUpload from "@/components/atoms/ImageUpload";
 import Loading from "@/components/ui/Loading";
 import Error from "@/components/ui/Error";
 import VoteButton from "@/components/molecules/VoteButton";
@@ -19,11 +19,11 @@ const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [isVoted, setIsVoted] = useState(false);
-  const [isVoting, setIsVoting] = useState(false);
+const [isVoting, setIsVoting] = useState(false);
   const [newComment, setNewComment] = useState("");
-  const [commentImages, setCommentImages] = useState([]);
   const [authorName, setAuthorName] = useState("");
-  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [commentImages, setCommentImages] = useState([]);
+  const [replyingTo, setReplyingTo] = useState(null);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   useEffect(() => {
@@ -89,22 +89,24 @@ const loadPostDetails = async () => {
 const handleSubmitComment = async (e) => {
     e.preventDefault();
     
-    if (!newComment.trim()) return;
-    if (!isAnonymous && !authorName.trim()) {
-      toast.error("Please enter your name or select anonymous");
+    if (!newComment.trim()) {
+      toast.error("Please enter a comment");
+      return;
+    }
+    
+    if (!authorName.trim()) {
+      toast.error("Please enter your name");
       return;
     }
     
     setIsSubmittingComment(true);
     
     try {
-      await commentService.create({
-        postId: String(postId),
-        parentId: null,
-        authorName: isAnonymous ? "Anonymous" : authorName.trim(),
+      const comment = await commentService.create({
+postId: post.Id,
+        authorName: authorName.trim() || "Anonymous",
         content: newComment.trim(),
-        images: commentImages,
-        isAnonymous
+        images: commentImages
       });
       
       // Update comment count in post
@@ -119,9 +121,8 @@ const handleSubmitComment = async (e) => {
       
       setNewComment("");
       setCommentImages([]);
-      if (!isAnonymous) setAuthorName("");
-      
-      toast.success("Comment added successfully!");
+      setAuthorName("");
+      toast.success("Comment added successfully");
     } catch (err) {
       toast.error("Failed to add comment. Please try again.");
     } finally {
@@ -134,14 +135,12 @@ const handleReply = async (parentId, content, images = []) => {
     
     try {
       await commentService.create({
-        postId: String(postId),
-        parentId: String(parentId),
-        authorName: "Anonymous", // Simplify for replies
+        postId: post.Id,
+        parentId: parentId,
+        authorName: authorName.trim() || "Anonymous",
         content: content.trim(),
-        images: images,
-        isAnonymous: true
+        images: images
       });
-      
       // Reload comments
       const updatedComments = await commentService.getByPostId(postId);
       setComments(updatedComments);
@@ -297,36 +296,19 @@ return (
                             className="min-h-[80px] resize-none"
                           />
                           
-                          <ImageUpload
+<ImageUpload
                             images={commentImages}
                             onChange={setCommentImages}
                             maxImages={3}
                             maxSizeMB={5}
                           />
                           
-                          <div className="flex items-center space-x-4">
-                            <div className="flex items-center space-x-2">
-                              <input
-                                type="checkbox"
-                                id="commentAnonymous"
-                                checked={isAnonymous}
-                                onChange={(e) => setIsAnonymous(e.target.checked)}
-                                className="rounded border-gray-300 text-primary focus:ring-primary/50"
-                              />
-                              <label htmlFor="commentAnonymous" className="text-sm text-gray-700">
-                                Post anonymously
-                              </label>
-                            </div>
-                            
-                            {!isAnonymous && (
-                              <Input
-                                placeholder="Your name..."
-                                value={authorName}
-                                onChange={(e) => setAuthorName(e.target.value)}
-                                className="max-w-xs"
-                              />
-                            )}
-                          </div>
+                          <Input
+                            placeholder="Your name..."
+                            value={authorName}
+                            onChange={(e) => setAuthorName(e.target.value)}
+                            className="max-w-xs"
+                          />
                         </div>
                         
                         <Button

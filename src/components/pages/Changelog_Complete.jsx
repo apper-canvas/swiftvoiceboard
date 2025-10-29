@@ -1,18 +1,18 @@
-import { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { toast } from "react-toastify";
-import ApperIcon from "@/components/ApperIcon";
-import ChangelogCard from "@/components/molecules/ChangelogCard";
-import CommentItem from "@/components/molecules/CommentItem";
-import Input from "@/components/atoms/Input";
-import Textarea from "@/components/atoms/Textarea";
-import Button from "@/components/atoms/Button";
-import ImageUpload from "@/components/atoms/ImageUpload";
-import Loading from "@/components/ui/Loading";
-import Error from "@/components/ui/Error";
-import Empty from "@/components/ui/Empty";
 import { changelogService } from "@/services/api/changelogService";
 import { commentService } from "@/services/api/commentService";
+import ApperIcon from "@/components/ApperIcon";
+import Button from "@/components/atoms/Button";
+import Input from "@/components/atoms/Input";
+import Textarea from "@/components/atoms/Textarea";
+import ImageUpload from "@/components/atoms/ImageUpload";
+import Loading from "@/components/ui/Loading";
+import Empty from "@/components/ui/Empty";
+import Error from "@/components/ui/Error";
+import ChangelogCard from "@/components/molecules/ChangelogCard";
+import CommentItem from "@/components/molecules/CommentItem";
 
 function Changelog() {
   const [entries, setEntries] = useState([]);
@@ -61,7 +61,7 @@ function Changelog() {
     }
   }
 
-  async function handleSubmitComment(e, entryId) {
+async function handleSubmitComment(e, entryId) {
     e.preventDefault();
     
     const form = commentForms[entryId];
@@ -72,9 +72,7 @@ function Changelog() {
         postId: entryId,
         authorName: form.authorName?.trim() || 'Anonymous',
         content: form.content.trim(),
-        images: form.images || [],
-        isAnonymous: form.isAnonymous || false,
-        parentId: null
+        images: form.images || []
       });
 
       setComments(prev => ({
@@ -84,24 +82,21 @@ function Changelog() {
 
       setCommentForms(prev => ({
         ...prev,
-        [entryId]: { authorName: '', content: '', images: [], isAnonymous: false }
+        [entryId]: { authorName: '', content: '', images: [] }
       }));
-
       toast.success("Comment posted successfully");
     } catch (err) {
       toast.error("Failed to post comment");
     }
   }
 
-  async function handleReply(entryId, parentId, content, images = []) {
+async function handleReply(entryId, parentId, content, images = []) {
     try {
       const newReply = await commentService.create({
         postId: entryId,
-        authorName: 'Anonymous',
+        parentId: parentId,
         content: content.trim(),
-        images: images || [],
-        isAnonymous: true,
-        parentId: parentId
+        images: images || []
       });
 
       setComments(prev => ({
@@ -188,21 +183,11 @@ function Changelog() {
                 {expandedEntries[entry.Id] && (
                   <div className="px-6 pb-6 space-y-6 border-t border-gray-100">
                     {/* Comment Form */}
-                    <form 
+<form 
                       onSubmit={(e) => handleSubmitComment(e, entry.Id)}
                       className="pt-6 space-y-4"
                     >
-                      <div>
-                        <Input
-                          placeholder="Your name (optional)"
-                          value={commentForms[entry.Id]?.authorName || ''}
-                          onChange={(e) => setCommentForms(prev => ({
-                            ...prev,
-                            [entry.Id]: { ...prev[entry.Id], authorName: e.target.value }
-                          }))}
-                        />
-                      </div>
-                      <div>
+                      <div className="space-y-3">
                         <Textarea
                           placeholder="Share your thoughts on this release..."
                           value={commentForms[entry.Id]?.content || ''}
@@ -231,21 +216,8 @@ function Changelog() {
                         >
                           Post Comment
                         </Button>
-                        <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
-                          <input
-                            type="checkbox"
-                            checked={commentForms[entry.Id]?.isAnonymous || false}
-                            onChange={(e) => setCommentForms(prev => ({
-                              ...prev,
-                              [entry.Id]: { ...prev[entry.Id], isAnonymous: e.target.checked }
-                            }))}
-                            className="rounded border-gray-300 text-primary focus:ring-primary"
-                          />
-                          Post anonymously
-                        </label>
                       </div>
                     </form>
-
                     {/* Comments List */}
                     {loadingComments[entry.Id] ? (
                       <div className="flex justify-center py-8">
