@@ -1,8 +1,10 @@
 import { motion } from "framer-motion";
+import { useNavigate } from "react-router-dom";
 import { format } from "date-fns";
+import React from "react";
 import ApperIcon from "@/components/ApperIcon";
-import Card from "@/components/atoms/Card";
 import Badge from "@/components/atoms/Badge";
+import Card from "@/components/atoms/Card";
 import VoteButton from "@/components/molecules/VoteButton";
 
 const RoadmapColumn = ({ 
@@ -12,6 +14,7 @@ const RoadmapColumn = ({
   color = "primary",
   icon = "Clock"
 }) => {
+  const navigate = useNavigate();
   const getColorClasses = (colorName) => {
     const colors = {
       primary: {
@@ -58,29 +61,34 @@ const RoadmapColumn = ({
             <p className="text-sm">No items yet</p>
           </div>
         ) : (
-          items.map((item, index) => (
+items.map((item, index) => (
             <motion.div
               key={item.Id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
             >
-              <Card className="p-4 hover:shadow-lg transition-all duration-200">
+              <Card 
+                className="p-4 hover:shadow-lg transition-all duration-200 cursor-pointer"
+                onClick={() => navigate(`/roadmap/${item.Id}`)}
+              >
                 <div className="flex items-start justify-between mb-3">
                   <div className="flex-1">
-                    <h4 className="font-semibold text-gray-900 mb-2 text-sm">
-                      {item.post.title}
+                    <h4 className="font-semibold text-gray-900 mb-1">
+                      {item.post?.title || 'Untitled'}
                     </h4>
                     <p className="text-xs text-gray-600 leading-relaxed">
-                      {truncateText(item.post.description)}
+                      {truncateText(item.post?.description || '')}
                     </p>
                   </div>
                   
                   <VoteButton
-                    count={item.post.voteCount}
+                    count={item.post?.voteCount || 0}
                     isVoted={false}
                     size="sm"
-                    onClick={() => {}}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                    }}
                   />
                 </div>
 

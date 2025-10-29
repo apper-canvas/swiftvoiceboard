@@ -4,6 +4,7 @@ import Layout from "@/components/organisms/Layout";
 
 const FeedbackBoard = lazy(() => import("@/components/pages/FeedbackBoard"));
 const Roadmap = lazy(() => import("@/components/pages/Roadmap"));
+const RoadmapDetail = lazy(() => import("@/components/pages/RoadmapDetail"));
 const Changelog = lazy(() => import("@/components/pages/Changelog"));
 const NotFound = lazy(() => import("@/components/pages/NotFound"));
 
@@ -33,6 +34,14 @@ const mainRoutes = [
     element: (
       <Suspense fallback={<LoadingFallback />}>
         <Roadmap />
+      </Suspense>
+    ),
+},
+  {
+    path: "roadmap/:id",
+    element: (
+      <Suspense fallback={<LoadingFallback />}>
+        <RoadmapDetail />
       </Suspense>
     ),
   },

@@ -75,7 +75,30 @@ async update(id, updateData) {
     if (index === -1) {
       throw new Error(`Comment with id ${id} not found`);
     }
-    const deleted = comments.splice(index, 1)[0];
+const deleted = comments.splice(index, 1)[0];
     return { ...deleted };
+  },
+
+  async getByRoadmapItemId(roadmapItemId) {
+    await delay(250);
+    const itemComments = comments.filter(c => c.roadmapItemId === String(roadmapItemId));
+    
+    // Sort comments by creation date (oldest first for top-level)
+    const topLevel = itemComments
+      .filter(c => !c.parentId)
+      .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    
+    const withReplies = topLevel.map(comment => {
+      const replies = itemComments
+        .filter(c => c.parentId === String(comment.Id))
+        .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+      
+      return {
+        ...comment,
+        replies
+      };
+    });
+    
+    return withReplies;
   }
 };
