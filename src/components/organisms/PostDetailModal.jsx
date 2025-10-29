@@ -1,37 +1,38 @@
-import { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useEffect, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
 import { toast } from "react-toastify";
-import ApperIcon from "@/components/ApperIcon";
-import Button from "@/components/atoms/Button";
-import Badge from "@/components/atoms/Badge";
-import Input from "@/components/atoms/Input";
-import VoteButton from "@/components/molecules/VoteButton";
-import CommentItem from "@/components/molecules/CommentItem";
-import Loading from "@/components/ui/Loading";
-import Error from "@/components/ui/Error";
+import ImageUpload from "@/components/atoms/ImageUpload";
 import { feedbackService } from "@/services/api/feedbackService";
 import { commentService } from "@/services/api/commentService";
-
+import ApperIcon from "@/components/ApperIcon";
+import Badge from "@/components/atoms/Badge";
+import Button from "@/components/atoms/Button";
+import Input from "@/components/atoms/Input";
+import Loading from "@/components/ui/Loading";
+import Error from "@/components/ui/Error";
+import VoteButton from "@/components/molecules/VoteButton";
+import CommentItem from "@/components/molecules/CommentItem";
 const PostDetailModal = ({ postId, isOpen, onClose }) => {
-  const [post, setPost] = useState(null);
+const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [isVoted, setIsVoted] = useState(false);
   const [isVoting, setIsVoting] = useState(false);
   const [newComment, setNewComment] = useState("");
+  const [commentImages, setCommentImages] = useState([]);
   const [authorName, setAuthorName] = useState("");
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
-
+  const [selectedImage, setSelectedImage] = useState(null);
   useEffect(() => {
     if (isOpen && postId) {
       loadPostDetails();
     }
   }, [isOpen, postId]);
 
-  const loadPostDetails = async () => {
+const loadPostDetails = async () => {
     setLoading(true);
     setError("");
     
@@ -51,6 +52,7 @@ const PostDetailModal = ({ postId, isOpen, onClose }) => {
       setError(err.message);
     } finally {
       setLoading(false);
+      setCommentImages([]);
     }
   };
 
@@ -84,7 +86,7 @@ const PostDetailModal = ({ postId, isOpen, onClose }) => {
     }
   };
 
-  const handleSubmitComment = async (e) => {
+const handleSubmitComment = async (e) => {
     e.preventDefault();
     
     if (!newComment.trim()) return;
@@ -101,6 +103,7 @@ const PostDetailModal = ({ postId, isOpen, onClose }) => {
         parentId: null,
         authorName: isAnonymous ? "Anonymous" : authorName.trim(),
         content: newComment.trim(),
+        images: commentImages,
         isAnonymous
       });
       
@@ -115,6 +118,7 @@ const PostDetailModal = ({ postId, isOpen, onClose }) => {
       setComments(updatedComments);
       
       setNewComment("");
+      setCommentImages([]);
       if (!isAnonymous) setAuthorName("");
       
       toast.success("Comment added successfully!");
@@ -125,7 +129,7 @@ const PostDetailModal = ({ postId, isOpen, onClose }) => {
     }
   };
 
-  const handleReply = async (parentId, content) => {
+const handleReply = async (parentId, content, images = []) => {
     if (!content.trim()) return;
     
     try {
@@ -134,6 +138,7 @@ const PostDetailModal = ({ postId, isOpen, onClose }) => {
         parentId: String(parentId),
         authorName: "Anonymous", // Simplify for replies
         content: content.trim(),
+        images: images,
         isAnonymous: true
       });
       
@@ -250,19 +255,52 @@ const PostDetailModal = ({ postId, isOpen, onClose }) => {
                     </p>
                   </div>
 
+{/* Post Images */}
+                  {post.images && post.images.length > 0 && (
+                    <div className="space-y-2">
+                      <h3 className="text-sm font-medium text-gray-700">Attachments</h3>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        {post.images.map((image, index) => (
+                          <motion.div
+                            key={index}
+                            whileHover={{ scale: 1.05 }}
+                            className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 cursor-pointer group"
+                            onClick={() => setSelectedImage(image)}
+                          >
+                            <img
+                              src={image}
+                              alt={`Attachment ${index + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <ApperIcon name="ZoomIn" className="h-6 w-6 text-white" />
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Comment Form */}
                   <div className="border-t pt-6">
                     <h3 className="text-lg font-semibold text-gray-900 mb-4">
                       Add Comment ({comments.length})
                     </h3>
                     
-                    <form onSubmit={handleSubmitComment} className="space-y-4">
+<form onSubmit={handleSubmitComment} className="space-y-4">
                       <div className="space-y-3">
                         <Input
                           placeholder="Write your comment..."
                           value={newComment}
                           onChange={(e) => setNewComment(e.target.value)}
                           className="min-h-[80px] resize-none"
+                        />
+                        
+                        <ImageUpload
+                          images={commentImages}
+                          onChange={setCommentImages}
+                          maxImages={3}
+                          maxSizeMB={5}
                         />
                         
                         <div className="flex items-center space-x-4">
@@ -314,16 +352,17 @@ const PostDetailModal = ({ postId, isOpen, onClose }) => {
                   {comments.length > 0 && (
                     <div className="border-t pt-6">
                       <div className="space-y-0 divide-y divide-gray-100">
-                        {comments.map((comment) => (
+{comments.map((comment) => (
                           <CommentItem
                             key={comment.Id}
                             comment={comment}
                             onReply={handleReply}
                             isSubmittingReply={false}
+                            onImageClick={setSelectedImage}
                           />
                         ))}
                       </div>
-                    </div>
+</div>
                   )}
                 </div>
               )}
@@ -332,7 +371,38 @@ const PostDetailModal = ({ postId, isOpen, onClose }) => {
         </div>
       )}
     </AnimatePresence>
-  );
+        {/* Image Lightbox */}
+        <AnimatePresence>
+          {selectedImage && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/90 z-[70] flex items-center justify-center p-4"
+              onClick={() => setSelectedImage(null)}
+            >
+              <motion.div
+                initial={{ scale: 0.8 }}
+                animate={{ scale: 1 }}
+                exit={{ scale: 0.8 }}
+                className="relative max-w-4xl max-h-[90vh]"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <button
+                  onClick={() => setSelectedImage(null)}
+                  className="absolute -top-12 right-0 p-2 text-white hover:text-gray-300 transition-colors"
+                >
+                  <ApperIcon name="X" className="h-6 w-6" />
+                </button>
+                <img
+                  src={selectedImage}
+                  alt="Full size"
+                  className="max-w-full max-h-[90vh] rounded-lg"
+                />
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 };
 
 export default PostDetailModal;

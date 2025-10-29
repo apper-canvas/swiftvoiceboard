@@ -34,7 +34,12 @@ const RichTextEditor = ({ value = '', onChange, error, placeholder = 'Start typi
       execCommand('createLink', url);
     }
   };
-
+const insertImage = () => {
+    const url = prompt('Enter image URL:');
+    if (url) {
+      document.execCommand('insertImage', false, url);
+    }
+  };
   const formatButtons = [
     { icon: 'Bold', command: 'bold', title: 'Bold (Ctrl+B)' },
     { icon: 'Italic', command: 'italic', title: 'Italic (Ctrl+I)' },
@@ -51,7 +56,8 @@ const RichTextEditor = ({ value = '', onChange, error, placeholder = 'Start typi
   ];
 
   const actionButtons = [
-    { icon: 'Link', action: insertLink, title: 'Insert Link' },
+{ icon: 'Link', action: insertLink, title: 'Insert Link' },
+    { icon: 'Image', action: insertImage, title: 'Insert Image' },
     { icon: 'Quote', command: 'formatBlock', value: 'blockquote', title: 'Blockquote' },
   ];
 

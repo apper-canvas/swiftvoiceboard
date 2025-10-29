@@ -12,6 +12,7 @@ const FeedbackCard = ({
   isVoted = false,
   isVoting = false 
 }) => {
+  const hasImages = post.images && post.images.length > 0;
   const handleVoteClick = (e) => {
     e.stopPropagation();
     onVote(post.Id);
@@ -75,7 +76,13 @@ const FeedbackCard = ({
         <p className="text-gray-600 mb-4 text-sm leading-relaxed">
           {truncateText(post.description)}
         </p>
-
+{/* Image Indicator */}
+          {hasImages && (
+            <div className="flex items-center space-x-1.5 text-xs text-gray-500">
+              <ApperIcon name="Image" className="h-3.5 w-3.5" />
+              <span>{post.images.length}</span>
+            </div>
+          )}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <Badge variant={getStatusColor(post.status)}>

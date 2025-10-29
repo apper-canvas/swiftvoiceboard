@@ -1,25 +1,29 @@
 import React, { useState } from "react";
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import { formatDistanceToNow } from "date-fns";
-import { cn } from "@/utils/cn";
+import ImageUpload from "@/components/atoms/ImageUpload";
 import ApperIcon from "@/components/ApperIcon";
 import Button from "@/components/atoms/Button";
 import Input from "@/components/atoms/Input";
-
+import { cn } from "@/utils/cn";
+ 
 const CommentItem = ({ 
   comment, 
   onReply, 
   level = 0,
-  isSubmittingReply = false 
+  isSubmittingReply = false,
+  onImageClick = () => {} 
 }) => {
-  const [isReplying, setIsReplying] = useState(false);
+const [isReplying, setIsReplying] = useState(false);
   const [replyText, setReplyText] = useState("");
+  const [replyImages, setReplyImages] = useState([]);
 
-  const handleSubmitReply = (e) => {
+const handleSubmitReply = async (e) => {
     e.preventDefault();
     if (replyText.trim()) {
-      onReply(comment.Id, replyText.trim());
+      await onReply(comment.Id, replyText, replyImages);
       setReplyText("");
+      setReplyImages([]);
       setIsReplying(false);
     }
   };
@@ -59,7 +63,33 @@ const CommentItem = ({
             </div>
             
             <p className="text-sm text-gray-700 leading-relaxed mb-3">
-              {comment.content}
+{comment.content}
+            </p>
+
+            {/* Comment Images */}
+            {comment.images && comment.images.length > 0 && (
+              <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
+                {comment.images.map((image, index) => (
+                  <motion.div
+                    key={index}
+                    whileHover={{ scale: 1.05 }}
+                    className="relative aspect-square rounded-lg overflow-hidden bg-gray-100 cursor-pointer group"
+                    onClick={() => onImageClick(image)}
+                  >
+                    <img
+                      src={image}
+                      alt={`Attachment ${index + 1}`}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <ApperIcon name="ZoomIn" className="h-5 w-5 text-white" />
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
+
+            <p className="hidden">
             </p>
             
             {level < maxDepth && (
@@ -77,7 +107,7 @@ const CommentItem = ({
         </div>
 
         {/* Reply Form */}
-        {isReplying && (
+{isReplying && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: "auto" }}
@@ -90,6 +120,12 @@ const CommentItem = ({
                 value={replyText}
                 onChange={(e) => setReplyText(e.target.value)}
                 className="text-sm"
+              />
+              <ImageUpload
+                images={replyImages}
+                onChange={setReplyImages}
+                maxImages={2}
+                maxSizeMB={5}
               />
               <div className="flex items-center space-x-2">
                 <Button
@@ -114,6 +150,7 @@ const CommentItem = ({
                   onClick={() => {
                     setIsReplying(false);
                     setReplyText("");
+                    setReplyImages([]);
                   }}
                   className="text-xs"
                 >
@@ -127,13 +164,14 @@ const CommentItem = ({
         {/* Nested Replies */}
         {comment.replies && comment.replies.length > 0 && (
           <div className="mt-4">
-            {comment.replies.map((reply) => (
+{comment.replies.map((reply) => (
               <CommentItem
                 key={reply.Id}
                 comment={reply}
                 onReply={onReply}
                 level={level + 1}
                 isSubmittingReply={isSubmittingReply}
+                onImageClick={onImageClick}
               />
             ))}
           </div>

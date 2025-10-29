@@ -1,20 +1,21 @@
-import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import React, { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "react-toastify";
+import ImageUpload from "@/components/atoms/ImageUpload";
+import { feedbackService } from "@/services/api/feedbackService";
 import ApperIcon from "@/components/ApperIcon";
+import Select from "@/components/atoms/Select";
 import Button from "@/components/atoms/Button";
 import Input from "@/components/atoms/Input";
 import RichTextEditor from "@/components/atoms/RichTextEditor";
-import Select from "@/components/atoms/Select";
-import { feedbackService } from "@/services/api/feedbackService";
-
 const SubmitModal = ({ isOpen, onClose }) => {
 const [formData, setFormData] = useState({
     title: "",
     description: "",
     category: "",
     isAnonymous: false,
-    authorName: ""
+    authorName: "",
+    images: []
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errors, setErrors] = useState({});
@@ -58,7 +59,7 @@ const [formData, setFormData] = useState({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e) => {
+const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!validateForm()) return;
@@ -79,7 +80,8 @@ title: "",
         description: "",
         category: "",
         isAnonymous: false,
-        authorName: ""
+        authorName: "",
+        images: []
       });
       setErrors({});
       onClose();
@@ -102,6 +104,9 @@ const handleInputChange = (field, value) => {
     }
   };
 
+  const handleImagesChange = (images) => {
+    setFormData(prev => ({ ...prev, images }));
+  };
   return (
     <AnimatePresence>
       {isOpen && (
@@ -174,7 +179,20 @@ const handleInputChange = (field, value) => {
                   />
                   {errors.description && (
                     <p className="text-sm text-error">{errors.description}</p>
-                  )}
+)}
+                </div>
+
+{/* Image Upload */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Attachments (Optional)
+                  </label>
+                  <ImageUpload
+                    images={formData.images}
+                    onChange={handleImagesChange}
+                    maxImages={5}
+                    maxSizeMB={5}
+                  />
                 </div>
 
                 {/* Category */}
@@ -231,8 +249,8 @@ const handleInputChange = (field, value) => {
                   </div>
                 )}
 
-                {/* Submit Buttons */}
-                <div className="flex items-center justify-end space-x-3 pt-4 border-t border-gray-100">
+{/* Submit Buttons */}
+                <div className="flex items-center justify-end space-x-3 pt-6 border-t border-gray-100">
                   <Button
                     type="button"
                     variant="outline"

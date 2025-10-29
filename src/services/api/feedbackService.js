@@ -86,12 +86,13 @@ async getVotedPosts() {
     return { ...post };
   },
 
-  async create(postData) {
+async create(postData) {
     await delay(400);
     const newId = Math.max(...posts.map(p => p.Id)) + 1;
     const newPost = {
       Id: newId,
       ...postData,
+      images: postData.images || [],
       voteCount: 0,
       commentCount: 0,
       status: "under-review",
@@ -102,7 +103,7 @@ async getVotedPosts() {
     return { ...newPost };
   },
 
-  async update(id, updateData) {
+async update(id, updateData) {
     await delay(300);
     const index = posts.findIndex(p => p.Id === parseInt(id));
     if (index === -1) {
@@ -111,6 +112,7 @@ async getVotedPosts() {
     posts[index] = {
       ...posts[index],
       ...updateData,
+      images: updateData.images !== undefined ? updateData.images : posts[index].images,
       updatedAt: new Date().toISOString()
     };
     return { ...posts[index] };

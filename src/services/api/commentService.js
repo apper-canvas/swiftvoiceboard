@@ -28,12 +28,13 @@ export const commentService = {
     return withReplies;
   },
 
-  async create(commentData) {
+async create(commentData) {
     await delay(300);
     const newId = Math.max(...comments.map(c => c.Id)) + 1;
     const newComment = {
       Id: newId,
       ...commentData,
+      images: commentData.images || [],
       createdAt: new Date().toISOString()
     };
     comments.push(newComment);
@@ -54,7 +55,7 @@ export const commentService = {
     return { ...comment };
   },
 
-  async update(id, updateData) {
+async update(id, updateData) {
     await delay(250);
     const index = comments.findIndex(c => c.Id === parseInt(id));
     if (index === -1) {
@@ -62,7 +63,8 @@ export const commentService = {
     }
     comments[index] = {
       ...comments[index],
-      ...updateData
+      ...updateData,
+      images: updateData.images !== undefined ? updateData.images : comments[index].images
     };
     return { ...comments[index] };
   },
