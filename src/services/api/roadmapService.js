@@ -98,13 +98,20 @@ export const roadmapService = {
     }
   },
 
-  async getById(id) {
+async getById(id) {
     await delay(150);
     const item = roadmapItems.find(item => item.Id === parseInt(id));
     if (!item) {
       throw new Error(`Roadmap item with id ${id} not found`);
     }
-    return { ...item };
+    
+    // Fetch associated feedback post
+    try {
+      const post = await feedbackService.getById(item.feedbackPostId);
+      return { ...item, post };
+    } catch (error) {
+      throw new Error(`Associated feedback post (ID: ${item.feedbackPostId}) not found for roadmap item`);
+    }
   },
 
   async delete(id) {
