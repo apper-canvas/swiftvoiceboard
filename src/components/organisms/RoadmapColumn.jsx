@@ -62,7 +62,7 @@ const RoadmapColumn = ({
           </div>
         ) : (
 items.map((item, index) => (
-            <motion.div
+<motion.div
               key={item.Id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
