@@ -1,6 +1,4 @@
 import feedbackData from "@/services/mockData/feedbackPosts.json";
-import React from "react";
-import Error from "@/components/ui/Error";
 
 let posts = [...feedbackData];
 

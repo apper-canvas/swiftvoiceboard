@@ -34,7 +34,7 @@ const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 useEffect(() => {
     loadPosts();
     loadVotedPosts();
-  }, [filters]);
+  }, [filters.categories, filters.statuses, filters.search, filters.sortBy]);
 
   const loadPosts = async () => {
     setLoading(true);
@@ -43,6 +43,7 @@ useEffect(() => {
     try {
       const data = await feedbackService.getAll(filters);
       setPosts(data);
+      setError("");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -107,9 +108,13 @@ const handleSearchChange = (value) => {
     return votedPostIds.includes(postId);
   };
 
-  const loadVotedPosts = async () => {
-    const voted = await feedbackService.getVotedPosts();
-    setVotedPosts(voted);
+const loadVotedPosts = async () => {
+    try {
+      const voted = await feedbackService.getVotedPosts();
+      setVotedPosts(voted);
+    } catch (err) {
+      console.error("Failed to load voted posts:", err);
+    }
   };
   const hasActiveFilters = filters.categories.length > 0 || filters.statuses.length > 0 || filters.search;
 
