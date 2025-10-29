@@ -103,14 +103,14 @@ const RoadmapDetail = () => {
     }
   };
 
-  const handleVote = async () => {
-    if (!item) return;
+const handleVote = async () => {
+    if (!item?.post) return;
     try {
       setItem(prev => ({
         ...prev,
         post: {
           ...prev.post,
-          voteCount: prev.post.voteCount + 1
+          voteCount: (prev.post?.voteCount || 0) + 1
         }
       }));
       toast.success("Vote recorded!");
@@ -134,10 +134,10 @@ const RoadmapDetail = () => {
     ).join(" ");
   };
 
-  if (loading) return <Loading type="post" />;
+if (loading) return <Loading type="post" />;
   if (error) return <Error message={error} onRetry={loadItemDetails} />;
   if (!item) return <Error message="Roadmap item not found" onRetry={() => navigate("/roadmap")} />;
-
+  if (!item.post) return <Error message="Roadmap item details not available" onRetry={loadItemDetails} />;
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-white to-primary/5">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -166,29 +166,29 @@ const RoadmapDetail = () => {
             <div className="flex items-start justify-between mb-4">
               <div className="flex-1">
                 <div className="flex items-center space-x-3 mb-3">
-                  <Badge variant={getStatusColor(item.stage)}>
+<Badge variant={getStatusColor(item.stage)}>
                     {formatStatus(item.stage)}
                   </Badge>
                   <span className="text-sm text-gray-500">
-                    {formatDistanceToNow(new Date(item.post.createdAt), { addSuffix: true })}
+                    {formatDistanceToNow(new Date(item.post?.createdAt || new Date()), { addSuffix: true })}
                   </span>
                 </div>
                 <h1 className="text-3xl font-bold text-gray-900 mb-3">
-                  {item.post.title}
+                  {item.post?.title || 'Untitled'}
                 </h1>
-                <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                  {item.post.description}
+<p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
+                  {item.post?.description || 'No description available'}
                 </p>
               </div>
               <div className="ml-6">
                 <VoteButton
-                  count={item.post.voteCount}
+                  count={item.post?.voteCount || 0}
                   onClick={handleVote}
                 />
               </div>
             </div>
 
-            {item.post.images && item.post.images.length > 0 && (
+{item.post?.images && item.post.images.length > 0 && (
               <div className="mt-4 grid grid-cols-2 gap-3">
                 {item.post.images.map((img, idx) => (
                   <img
